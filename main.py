@@ -1,11 +1,25 @@
 from classes import *
  
+from drawtool import *
 
-my_members = ['01','03','13','12','23']
-my_db = {'0': ['1','3'], '1':['0','2','3'], '2':['1','3'],'3':['0','1','2']}
-joints=[]
-my_verts = {'0': [0,0], '1':[1,0], '2':[2,0],'3':[1,1]}
-my_gen = truss_generator(my_members,my_db,my_verts,['0','2'])
-test_truss = truss(my_members,my_verts,joints)
+
+app = QApplication(sys.argv) 
+# Create the window
+window = Window()
+window.show() 
+
+if (sys.flags.interactive != 1) or not hasattr(QtCore, 'pyqt5'):
+    QApplication.instance().exec_()
+print("the following code will run")
+my_joints = window.outjoints
+my_verts = window.outverts
+my_gen = truss_generator(my_joints,my_verts,['0','2'])
+test_truss= my_gen.gen_truss()
 test_truss.solve()
-    
+forces = test_truss.member_forces
+
+results = trussWindow(test_truss)
+results.show()
+if (sys.flags.interactive != 1) or not hasattr(QtCore, 'pyqt5'):
+    QApplication.instance().exec_()
+print("success")

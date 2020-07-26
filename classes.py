@@ -4,8 +4,21 @@ Created on Thu Jul 23 17:09:18 2020
 
 @author: Andy
 """
+from drawtool import *
 import numpy as np
 from sklearn import preprocessing
+
+
+import sys 
+import numpy as np
+from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow,QMenuBar, QMenu , QAction, QPushButton
+from PyQt5.QtCore import Qt, QPoint, pyqtSlot
+from PyQt5.QtGui import QIcon , QImage, QBrush, QPen,QPainter, QColor 
+from PyQt5 import QtCore
+
+
+
+
 
 class joint(object):
     def __init__(self, joint_name,joint_targets, external_force=[0,0]):
@@ -30,12 +43,18 @@ class joint(object):
             
             
 class truss(object):
-    def __init__(self,members,verts,joints):
-        self.members = members 
+    def __init__(self,verts,joints):
+        self.members =[]
+        self.joints =joints
+
+        for joint in self.joints: 
+            for item in joint.members:
+                if item not in self.members: 
+                    self.members.append(item)
+                
         self.verts = verts 
         self.member_forces = {}
         self.max_force = []
-        self.joints =joints
         self.solvedness = False
         self.unsolved_joints = joints
         self.member_lengths={}
@@ -113,28 +132,92 @@ class truss(object):
                 joint.update()
                 
         self.update()
-        
+    
+    def draw(self):
+        pass
 
 
 
 class truss_generator(object):
-    def __init__(self, members, my_joints, verts,force_loc):
-        self.members = members 
+    def __init__(self, my_joints, verts,force_loc):
         self.force_loc = force_loc
+        self.verts = verts
         joints = []
         for item in my_joints: 
               my_joint = joint(item,my_joints[item])
               if my_joint.name in force_loc:
-                  my_joint.external_force= np.array([[0],[0.5]])
+                  my_joint.external_force= np.array([[0],[-0.5]])
+              elif my_joint.name == '1':
+                  my_joint.external_force = np.array([[0],[1]])
               joints.append(my_joint)
               
         self.joints = joints
         
-        def gen_truss(self):
-            return truss(self.members,self.verts,self.joints)        
+    def gen_truss(self):
+        return truss(self.verts,self.joints)        
+
     
+
+
+# we need to define a main window in which the app runs
+class trussWindow(QMainWindow):
     
-    
+    def __init__(self,truss):
+        super().__init__() 
+        top = 400
+        left = 400
+        width = 1920
+        height = 1080
+        members = truss.members
+        verts = truss.verts
+        self.setWindowTitle('Truss Visualiser') 
+        self.setGeometry(top,left, width, height) 
+        self.member_forces = truss.member_forces
+        self.members = {}
+        self.verts = {}
+        self.force_locs = {}
+        
+        scale = 1
+        #offset = np.array([600, 600])
+        offset = np.array([0,0])
+        
+        for item in members: 
+            print(np.array(verts[item[0]])*scale)
+            p1 = np.array(verts[item[0]])*scale+offset
+            p2 = np.array(verts[item[1]])*scale+offset
+            
+            point1 = QPoint(*(np.array(verts[item[0]])*scale+offset))
+            point2 = QPoint(*(np.array(verts[item[1]])*scale+offset))
+            self.force_locs[item] = [(0.5*(p1+p2))[0],(0.5*(p1+p2))[1] - 30]
+            self.members[item]=(point1,point2)
+        for item in verts: 
+            self.verts[item]= QPoint(*(np.array([verts[item][0],verts[item][1]])*scale+offset))
+            
+        
+    def paintEvent(self, event): 
+            #the method to paint the lines and vertices
+          qp = QPainter(self) 
+          br = QBrush(QColor(100,10,10,40))
+
+          qp.setBrush(br) 
+          
+          for item in self.verts:
+              # we draw the vertices
+              qp.drawEllipse(self.verts[item],7,7)
+          for member in self.members:
+              #and we draw the members (here we unpacked the tuple)
+              if self.member_forces[member]<0: 
+                  
+                  pen= QPen(Qt.red,5)
+                  qp.setPen(pen)
+              else: 
+                  pen= QPen(Qt.darkGreen,5)
+                  qp.setPen(pen)
+        
+              qp.drawLine(*self.members[member])
+              qp.drawText(*self.force_locs[member],"%.2f" % self.member_forces[member])
+            
+         
     
     
     
@@ -142,8 +225,15 @@ if __name__ == '__main__':
     my_members = ['01','03','13','12','23']
     my_db = {'0': ['1','3'], '1':['0','2','3'], '2':['1','3'],'3':['0','1','2']}
     joints=[]
-    my_verts = {'0': [0,0], '1':[1,0], '2':[2,0],'3':[1,1]}
-    my_gen = truss_generator(my_members,my_db,my_verts,['0','2'])
-    test_truss = truss(my_members,my_verts,joints)
+    my_verts = {'0': [0,0], '1':[400,0], '2':[800,0],'3':[400,-400]}
+    my_gen = truss_generator(my_db,my_verts,['0','2'])
+    test_truss= my_gen.gen_truss()
     test_truss.solve()
     
+    app = QApplication(sys.argv) 
+    # Create the window
+    mywindow = trussWindow(test_truss)
+    mywindow.show() 
+    
+    sys.exit(app.exec_())
+    print ("the following")
