@@ -5,11 +5,13 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow,QMenuBar, QMenu ,
 from PyQt5.QtCore import Qt, QPoint, pyqtSlot
 from PyQt5.QtGui import QIcon , QImage, QBrush, QPen,QPainter, QColor 
 from PyQt5 import QtCore
-
+import string
 # we need to define a main window in which the app runs
 
  
 class Window(QMainWindow):
+    # This function opens a window which allows the user to quickly design 
+    # a prototype truss.
     def __init__(self): 
         super().__init__()
         top = 400 
@@ -22,11 +24,14 @@ class Window(QMainWindow):
         self.setGeometry(top,left, width, height) 
         self.begin = QPoint() 
         #initialise the three fixed vertices 
-        self.left_vert = QPoint(400,500) 
-        self.right_vert = QPoint(1200,500)
-        self.mid_vert = QPoint(800,500)
-        self.verts ={'0':self.left_vert, '1':self.right_vert, '2':self.mid_vert}
+        self.left_vert = QPoint(400,700) 
+        self.right_vert = QPoint(1200,700)
+        self.mid_vert = QPoint(800,700)
+        
+        self.verts ={'a':self.left_vert, 'b':self.right_vert, 'c':self.mid_vert}
         self.outverts = {}
+        # the snapflag is to indicate whether the mouse has snapped onto an 
+        # existing vertex
         self.snapflag =False
         self.snapto = ''
         self.tempsnap = ''
@@ -72,14 +77,14 @@ class Window(QMainWindow):
                         self.snapflag = False 
             
             if self.snapflag== False:
-                self.verts[str(len(self.verts))] = event.pos()
-                self.tempsnap = str(len(self.verts))
+                self.verts[string.ascii_lowercase[len(self.verts)]] = event.pos()
+                self.tempsnap = string.ascii_lowercase[len(self.verts)]
             else: 
                 self.begin = self.verts[self.snapto]
                 self.tempsnap = self.snapto
             self.end = event.pos()
             self.update()
-            
+                
     def mouseMoveEvent(self, event): 
         for vert in self.verts:
             if (self.verts[vert]-event.pos()).manhattanLength()<20:
@@ -100,9 +105,9 @@ class Window(QMainWindow):
             self.end = event.pos() 
 
             if self.snapflag == False : 
-                temp=str(len(self.verts))
+                temp=string.ascii_lowercase[len(self.verts)]
 
-                self.verts[str(len(self.verts))] = event.pos()
+                self.verts[string.ascii_lowercase[len(self.verts)]] = event.pos()
             else: 
                 self.end = self.verts[self.snapto]
                 temp = self.snapto
@@ -114,9 +119,9 @@ class Window(QMainWindow):
         
     def on_click(self):
         for i in range(len(self.outmembers)):
-                my_member = self.outmembers[i]
-                if my_member[0]>my_member[1]:
-                    self.outmembers[i] = self.outmembers[i][::-1]
+            my_member = self.outmembers[i]
+            if my_member[0]>my_member[1]:
+                self.outmembers[i] = self.outmembers[i][::-1]
         for item in self.verts:
             self.outjoints[item]=[]
             self.outverts[item] = (self.verts[item].x(), self.verts[item].y())
